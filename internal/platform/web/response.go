@@ -19,7 +19,7 @@ func Respond(w http.ResponseWriter, v any, status int) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	if _, err := w.Write(jsonData); err != nil {
+	if _, err = w.Write(jsonData); err != nil {
 		return err
 	}
 

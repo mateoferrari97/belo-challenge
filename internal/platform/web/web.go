@@ -113,8 +113,7 @@ func (s *Server) listenAndServe() error {
 		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 
-		err := server.Shutdown(ctx)
-		if err == nil {
+		if err := server.Shutdown(ctx); err == nil {
 			return nil
 		}
 
