@@ -1,0 +1,47 @@
+version: "2"
+
+run:
+  timeout: 3m
+
+linters:
+  default: none
+  enable:
+    # Correctness (must-have)
+    - errcheck       # unchecked errors
+    - govet          # stdlib vet
+    - ineffassign    # ineffectual assignments
+    - staticcheck    # megalinter (includes ex-gosimple + ex-stylecheck in v2)
+    - unused         # dead code
+
+    # Bug prevention
+    - bodyclose      # HTTP response body not closed
+    - errorlint      # wrong %v vs %w, type-assert on errors
+    - nilerr         # returning nil after non-nil err
+    - rowserrcheck   # sql.Rows.Err() not checked
+    - sqlclosecheck  # sql.Rows/Stmt not closed
+
+    # Style / idiom
+    - gocritic       # opinionated extended checks (style+perf+diagnostic)
+    - revive         # modern golint replacement
+    - misspell       # English typos in strings/comments
+
+    # Performance
+    - prealloc       # slice preallocation hints
+
+    # Security
+    - gosec          # SQLi, weak crypto, hardcoded creds
+
+  settings:
+    revive:
+      rules:
+        - name: package-comments
+          disabled: true
+
+formatters:
+  enable:
+    - gofumpt        # stricter gofmt superset
+    - goimports      # imports grouping + formatting
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
