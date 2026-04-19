@@ -17,7 +17,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			httpErr = NewHTTPErrorf(http.StatusInternalServerError, "%s", err.Error())
 		}
 
-		if err := Respond(w, httpErr, httpErr.Status); err != nil {
+		if err = Respond(w, httpErr, httpErr.Status); err != nil {
 			log.Printf("writing http response : %v", err)
 		}
 	}
