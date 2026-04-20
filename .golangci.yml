@@ -37,6 +37,12 @@ linters:
         - name: package-comments
           disabled: true
 
+  exclusions:
+    rules:
+      - path: cmd/web/handler/openapi_errors\.go
+        linters:
+          - unused
+
 formatters:
   enable:
     - gofumpt        # stricter gofmt superset

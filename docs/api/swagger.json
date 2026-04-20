@@ -1,0 +1,440 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Belo Challenge",
+        "contact": {}
+    },
+    "paths": {
+        "/transactions": {
+            "get": {
+                "description": "Returns transactions where the given user is source or destination, newest first. Pagination via opaque cursor from a prior response.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "List transactions for a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000",
+                        "description": "User ID (UUID)",
+                        "name": "userId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Opaque pagination cursor from a prior response",
+                        "name": "cursor",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.listResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errListBadRequest"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errUserNotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errInternalServer"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new transfer between two users. Amounts above 50,000 return with status `pending` and require PATCH approval. Smaller amounts return `approved` with balances already updated.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Create a transaction",
+                "parameters": [
+                    {
+                        "description": "Transaction to create",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.createRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.createResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errCreateBadRequest"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errCreateNotFound"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errInsufficientBalance"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errInternalServer"
+                        }
+                    }
+                }
+            }
+        },
+        "/transactions/{id}/approve": {
+            "patch": {
+                "description": "Move a `pending` transaction to `approved`, debit source, credit destination. Fails if the transaction is not pending.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Approve a pending transaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440002",
+                        "description": "Transaction ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.createResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errTransitionBadRequest"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errTransactionNotFound"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errTransactionNotPending"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errInternalServer"
+                        }
+                    }
+                }
+            }
+        },
+        "/transactions/{id}/reject": {
+            "patch": {
+                "description": "Move a `pending` transaction to `rejected`. Terminal state; no further transitions. Balances are not touched.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Reject a pending transaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440002",
+                        "description": "Transaction ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.createResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errTransitionBadRequest"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errTransactionNotFound"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errTransactionNotPending"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/cmd_web_handler.errInternalServer"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "cmd_web_handler.createRequestBody": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "string",
+                    "format": "decimal",
+                    "example": "100.50"
+                },
+                "destination_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440001"
+                },
+                "source_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "cmd_web_handler.createResponseBody": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "string",
+                    "format": "decimal",
+                    "example": "100.50"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-04-19T12:00:00Z"
+                },
+                "destination_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440001"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440002"
+                },
+                "source_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "status": {
+                    "enum": [
+                        "approved",
+                        "pending",
+                        "rejected"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_mateoferrari97_belo-challenge_internal_transaction.Status"
+                        }
+                    ],
+                    "example": "approved"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-04-19T12:00:00Z"
+                }
+            }
+        },
+        "cmd_web_handler.errCreateBadRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "bad_request"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "amount must be greater than zero"
+                }
+            }
+        },
+        "cmd_web_handler.errCreateNotFound": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "not_found"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "source user not found"
+                }
+            }
+        },
+        "cmd_web_handler.errInsufficientBalance": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "conflict"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "insufficient balance"
+                }
+            }
+        },
+        "cmd_web_handler.errInternalServer": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "internal_server_error"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "internal server error"
+                }
+            }
+        },
+        "cmd_web_handler.errListBadRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "bad_request"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "invalid user_id"
+                }
+            }
+        },
+        "cmd_web_handler.errTransactionNotFound": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "not_found"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "transaction not found"
+                }
+            }
+        },
+        "cmd_web_handler.errTransactionNotPending": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "conflict"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "transaction is not pending"
+                }
+            }
+        },
+        "cmd_web_handler.errTransitionBadRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "bad_request"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "invalid transaction id"
+                }
+            }
+        },
+        "cmd_web_handler.errUserNotFound": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "not_found"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "user not found"
+                }
+            }
+        },
+        "cmd_web_handler.listResponseBody": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cmd_web_handler.createResponseBody"
+                    }
+                },
+                "next_cursor": {
+                    "type": "string",
+                    "example": "eyJjcmVhdGVkX2F0IjoiMjAyNi0wNC0xOVQxMjowMDowMFoiLCJpZCI6IjU1MGU4NDAwLWUyOWItNDFkNC1hNzE2LTQ0NjY1NTQ0MDAwMCJ9"
+                }
+            }
+        },
+        "github_com_mateoferrari97_belo-challenge_internal_transaction.Status": {
+            "type": "string",
+            "enum": [
+                "approved",
+                "pending",
+                "rejected"
+            ],
+            "x-enum-varnames": [
+                "StatusApproved",
+                "StatusPending",
+                "StatusRejected"
+            ]
+        }
+    }
+}
