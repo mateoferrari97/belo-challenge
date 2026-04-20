@@ -116,3 +116,12 @@ curl -X PATCH http://localhost:8080/v1/transactions/<id>/reject
 ├── Dockerfile
 └── Makefile
 ```
+
+## Design Notes
+
+Each of the four business rules mapped to a single design decision at the database transaction boundary, rather than layered validation in application code:
+
+- **Non-negative balances**: the source balance check runs inside the same transaction that performs the debit and credit, after both user rows have been locked. If the source cannot cover the amount, the operation is refused.
+- **Atomicity**: debit, credit, status change, and audit entries commit together, so a failure at any step rolls back the rest.
+- **Concurrent safety from the same source** : both participating user rows are locked in a deterministic order: only one can pass the balance check, the other is rejected.
+- **Traceability**: every balance movement is recorded with its before and after effect.
