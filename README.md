@@ -74,7 +74,7 @@ curl -X POST http://localhost:8080/v1/transactions \
 
 ### List a user's transactions
 
-Paginated with a cursor based strategy. Pass `cursor=<value>` on subsequent pages.
+Paginated with a cursor based strategy. Pass `cursor=<next_cursor>` as query param on subsequent pages.
 
 ```bash
 curl "http://localhost:8080/v1/transactions?userId=018f3a7b-0000-7000-8000-000000000001"
