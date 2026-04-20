@@ -1,0 +1,305 @@
+definitions:
+  cmd_web_handler.createRequestBody:
+    properties:
+      amount:
+        example: "100.50"
+        format: decimal
+        type: string
+      destination_id:
+        example: 550e8400-e29b-41d4-a716-446655440001
+        format: uuid
+        type: string
+      source_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        format: uuid
+        type: string
+    type: object
+  cmd_web_handler.createResponseBody:
+    properties:
+      amount:
+        example: "100.50"
+        format: decimal
+        type: string
+      created_at:
+        example: "2026-04-19T12:00:00Z"
+        type: string
+      destination_id:
+        example: 550e8400-e29b-41d4-a716-446655440001
+        format: uuid
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440002
+        format: uuid
+        type: string
+      source_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        format: uuid
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/github_com_mateoferrari97_belo-challenge_internal_transaction.Status'
+        enum:
+        - approved
+        - pending
+        - rejected
+        example: approved
+      updated_at:
+        example: "2026-04-19T12:00:00Z"
+        type: string
+    type: object
+  cmd_web_handler.errCreateBadRequest:
+    properties:
+      code:
+        example: bad_request
+        type: string
+      message:
+        example: amount must be greater than zero
+        type: string
+    type: object
+  cmd_web_handler.errCreateNotFound:
+    properties:
+      code:
+        example: not_found
+        type: string
+      message:
+        example: source user not found
+        type: string
+    type: object
+  cmd_web_handler.errInsufficientBalance:
+    properties:
+      code:
+        example: conflict
+        type: string
+      message:
+        example: insufficient balance
+        type: string
+    type: object
+  cmd_web_handler.errInternalServer:
+    properties:
+      code:
+        example: internal_server_error
+        type: string
+      message:
+        example: internal server error
+        type: string
+    type: object
+  cmd_web_handler.errListBadRequest:
+    properties:
+      code:
+        example: bad_request
+        type: string
+      message:
+        example: invalid user_id
+        type: string
+    type: object
+  cmd_web_handler.errTransactionNotFound:
+    properties:
+      code:
+        example: not_found
+        type: string
+      message:
+        example: transaction not found
+        type: string
+    type: object
+  cmd_web_handler.errTransactionNotPending:
+    properties:
+      code:
+        example: conflict
+        type: string
+      message:
+        example: transaction is not pending
+        type: string
+    type: object
+  cmd_web_handler.errTransitionBadRequest:
+    properties:
+      code:
+        example: bad_request
+        type: string
+      message:
+        example: invalid transaction id
+        type: string
+    type: object
+  cmd_web_handler.errUserNotFound:
+    properties:
+      code:
+        example: not_found
+        type: string
+      message:
+        example: user not found
+        type: string
+    type: object
+  cmd_web_handler.listResponseBody:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/cmd_web_handler.createResponseBody'
+        type: array
+      next_cursor:
+        example: eyJjcmVhdGVkX2F0IjoiMjAyNi0wNC0xOVQxMjowMDowMFoiLCJpZCI6IjU1MGU4NDAwLWUyOWItNDFkNC1hNzE2LTQ0NjY1NTQ0MDAwMCJ9
+        type: string
+    type: object
+  github_com_mateoferrari97_belo-challenge_internal_transaction.Status:
+    enum:
+    - approved
+    - pending
+    - rejected
+    type: string
+    x-enum-varnames:
+    - StatusApproved
+    - StatusPending
+    - StatusRejected
+info:
+  contact: {}
+  title: Belo Challenge
+paths:
+  /transactions:
+    get:
+      description: Returns transactions where the given user is source or destination,
+        newest first. Pagination via opaque cursor from a prior response.
+      parameters:
+      - description: User ID (UUID)
+        example: 550e8400-e29b-41d4-a716-446655440000
+        in: query
+        name: userId
+        required: true
+        type: string
+      - description: Opaque pagination cursor from a prior response
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cmd_web_handler.listResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errListBadRequest'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errUserNotFound'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errInternalServer'
+      summary: List transactions for a user
+      tags:
+      - transactions
+    post:
+      consumes:
+      - application/json
+      description: Create a new transfer between two users. Amounts above 50,000 return
+        with status `pending` and require PATCH approval. Smaller amounts return `approved`
+        with balances already updated.
+      parameters:
+      - description: Transaction to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/cmd_web_handler.createRequestBody'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/cmd_web_handler.createResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errCreateBadRequest'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errCreateNotFound'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errInsufficientBalance'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errInternalServer'
+      summary: Create a transaction
+      tags:
+      - transactions
+  /transactions/{id}/approve:
+    patch:
+      description: Move a `pending` transaction to `approved`, debit source, credit
+        destination. Fails if the transaction is not pending.
+      parameters:
+      - description: Transaction ID (UUID)
+        example: 550e8400-e29b-41d4-a716-446655440002
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cmd_web_handler.createResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errTransitionBadRequest'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errTransactionNotFound'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errTransactionNotPending'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errInternalServer'
+      summary: Approve a pending transaction
+      tags:
+      - transactions
+  /transactions/{id}/reject:
+    patch:
+      description: Move a `pending` transaction to `rejected`. Terminal state; no
+        further transitions. Balances are not touched.
+      parameters:
+      - description: Transaction ID (UUID)
+        example: 550e8400-e29b-41d4-a716-446655440002
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cmd_web_handler.createResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errTransitionBadRequest'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errTransactionNotFound'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errTransactionNotPending'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/cmd_web_handler.errInternalServer'
+      summary: Reject a pending transaction
+      tags:
+      - transactions
+swagger: "2.0"

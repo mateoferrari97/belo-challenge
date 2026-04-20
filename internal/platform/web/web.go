@@ -6,8 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"text/tabwriter"
 	"time"
 
@@ -45,12 +43,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func (s *Server) Run() error {
+func (s *Server) Run(ctx context.Context) error {
 	if err := s.printRoutes(); err != nil {
 		return err
 	}
 
-	return s.listenAndServe()
+	return s.listenAndServe(ctx)
 }
 
 func (s *Server) handlePing(w http.ResponseWriter, _ *http.Request) error {
@@ -84,7 +82,7 @@ func (s *Server) printRoutes() error {
 	return tw.Flush()
 }
 
-func (s *Server) listenAndServe() error {
+func (s *Server) listenAndServe(ctx context.Context) error {
 	addr := os.Getenv("ADDR")
 	if addr == "" {
 		addr = ":8080"
@@ -103,17 +101,14 @@ func (s *Server) listenAndServe() error {
 		serverErrors <- server.ListenAndServe()
 	}()
 
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-
 	select {
 	case err := <-serverErrors:
 		return fmt.Errorf("listen and serve: %w", err)
-	case <-shutdown:
-		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 
-		if err := server.Shutdown(ctx); err == nil {
+		if err := server.Shutdown(shutdownCtx); err == nil {
 			return nil
 		}
 
