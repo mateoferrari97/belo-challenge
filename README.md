@@ -20,7 +20,7 @@ Services:
 2. `migrate`: applies schema migrations and seeds initial users.
 3. `postgres`: persists users and transactions.
 
-Smoke test:
+Quick test:
 
 ```bash
 curl http://localhost:8080/ping
